@@ -133,8 +133,13 @@
         const highlightText = (text, concept) => {
             if (!text) return text;
             let processedText = text.replace(/(^|\s+)([0-9٠-٩]{1,2}\s*[-ـ\)])/g, '\n$2');
-            const entities = ['مصر', 'آسيا', 'أوروبا', 'إفريقيا', 'الوطن العربي', 'الإسلامي', 'الطولونية', 'الإخشيدية', 'الفاطمية', 'الأيوبية', 'المملوكية', 'العثماني', 'الفرنسية', 'صلاح الدين', 'عمر بن الخطاب', 'الشام', 'العراق', 'فلسطين', 'سوريا', 'السعودية', 'اليمن', 'عمان', 'المغرب', 'الجزائر', 'تونس', 'ليبيا', 'السودان', 'الصومال', 'جيبوتي', 'موريتانيا', 'الأموي', 'العباسي', 'الفارسي', 'الرومي', 'البيزنطي', 'المحيط الهندي', 'المحيط الأطلنطي', 'البحر الأحمر', 'البحر المتوسط', 'أمريكا الشمالية', 'أمريكا الجنوبية', 'أستراليا', 'القارة القطبية'];
-            const keywords = ['أعلى', 'أولى', 'أقل', 'أكثر', 'يختلف', 'تختلف', 'تتشابه', 'أول', 'أكبر', 'أصغر', 'أهم', 'أطول', 'أقصر', 'أسرع', 'أبطأ', 'شرق', 'غرب', 'شمال', 'جنوب', 'صيفاً', 'شتاءً', 'نادر', 'دائم', 'مؤقت', 'إيجابي', 'سلبي'];
+            
+            const continents = ['آسيا', 'أوروبا', 'إفريقيا', 'أمريكا الشمالية', 'أمريكا الجنوبية', 'أستراليا', 'القارة القطبية'];
+            const countries = ['مصر', 'سوريا', 'السعودية', 'اليمن', 'عمان', 'المغرب', 'الجزائر', 'تونس', 'ليبيا', 'السودان', 'الصومال', 'جيبوتي', 'موريتانيا', 'فلسطين', 'العراق'];
+            const waterBodies = ['المحيط الهندي', 'المحيط الأطلنطي', 'البحر الأحمر', 'البحر المتوسط'];
+            const empires = ['الوطن العربي', 'الإسلامي', 'الطولونية', 'الإخشيدية', 'الفاطمية', 'الأيوبية', 'المملوكية', 'العثماني', 'الفرنسية', 'صلاح الدين', 'عمر بن الخطاب', 'الشام', 'الأموي', 'العباسي', 'الفارسي', 'الرومي', 'البيزنطي'];
+            const keywords = ['أعلى', 'أقل', 'أكثر', 'يختلف', 'تختلف', 'تتشابه', 'أكبر', 'أصغر', 'أهم', 'أطول', 'أقصر', 'أسرع', 'أبطأ', 'شرق', 'غرب', 'شمال', 'جنوب', 'صيفاً', 'شتاءً', 'نادر', 'دائم', 'مؤقت', 'إيجابي', 'سلبي'];
+            const orderWords = ['أولى', 'الأولى', 'أولي', 'الاولي', 'أول', 'الأول', 'الاول', 'ثاني', 'الثاني', 'الثانية', 'ثالث', 'الثالث', 'الثالثة', 'رابع', 'الرابع', 'الرابعة', 'خامس', 'الخامس', 'الخامسة', 'سادس', 'السادس', 'السادسة', 'سابع', 'السابع', 'السابعة', 'ثامن', 'الثامن', 'الثامنة', 'تاسع', 'التاسع', 'التاسعة', 'عاشر', 'العاشر', 'العاشرة'];
             
             let elements = [{ type: 'text', content: processedText }];
             
@@ -152,25 +157,46 @@
             elements = processElements(elements, /((?:["'«”])[^"'»“]+(?:["'»“]))/g, 'quote');
             elements = processElements(elements, /(\([^0-9٠-٩][^)]+\))/g, 'parenthesis');
             elements = processElements(elements, /\*\*(.*?)\*\*/g, 'manual');
+            
+            // الأرقام والتواريخ
             elements = processElements(elements, /([0-9٠-٩]{1,2}\s*[-ـ\)]\s*[^\s]+)/g, 'numbered_start');
+            elements = processElements(elements, /((?:[0-9]{2,4}|[٠-٩]{2,4})(?:\s*(?:ق\.م|م|هـ)))/g, 'date');
+            elements = processElements(elements, /([0-9٠-٩]+)/g, 'number');
 
             if (concept) {
                 const escapedConcept = concept.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*${escapedConcept}[\\u0600-\\u06FF]*)`, 'gi'), 'concept');
             }
-            elements = processElements(elements, /((?:[0-9]{2,4}|[٠-٩]{2,4})(?:\s*(?:ق\.م|م|هـ)))/g, 'date');
+            
+            // تصنيف الكلمات المميزة للتمييز البصري
+            elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${continents.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'continent');
+            elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${countries.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'country');
+            elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${waterBodies.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'water');
+            elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${empires.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'empire');
             elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${keywords.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'keyword');
-            elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${entities.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'entity');
+            elements = processElements(elements, new RegExp(`([\\u0600-\\u06FF]*(?:${orderWords.join('|')})[\\u0600-\\u06FF]*)`, 'g'), 'orderWord');
 
             return elements.map((el, idx) => {
                 if (el.type === 'concept') return <span key={idx} className="text-secondary font-black">{el.content}</span>;
                 if (el.type === 'quote') return <span key={idx} className="text-purple-600 font-black">{el.content}</span>;
                 if (el.type === 'parenthesis') return <span key={idx} className="text-blue-900 font-black mx-1">{el.content}</span>;
                 if (el.type === 'manual') return <span key={idx} className="font-bold text-blue-600">{el.content}</span>;
-                if (el.type === 'numbered_start') return <span key={idx} className="text-red-600 font-black mx-1">{el.content}</span>;
-                if (el.type === 'date') return <span key={idx} className="text-indigo-600 font-black">{el.content}</span>;
-                if (el.type === 'keyword') return <span key={idx} className="text-rose-600 font-black">{el.content}</span>;
-                if (el.type === 'entity') return <span key={idx} className="text-secondary font-black">{el.content}</span>;
+                
+                // الأرقام والتواريخ باللون الأحمر
+                if (el.type === 'numbered_start' || el.type === 'date' || el.type === 'number') return <span key={idx} className="text-red-600 font-black mx-1">{el.content}</span>;
+                
+                // القارات باللون الأخضر
+                if (el.type === 'continent') return <span key={idx} className="text-green-600 font-black">{el.content}</span>;
+                
+                // الدول باللون الأزرق الملكي
+                if (el.type === 'country') return <span key={idx} className="text-blue-700 font-black">{el.content}</span>;
+                
+                // البحار والمحيطات باللون الذهبي
+                if (el.type === 'water') return <span key={idx} className="text-yellow-600 font-black">{el.content}</span>;
+                
+                // غيرها من الكلمات المميزة (تاريخية وكلمات دلالية وترتيب) باللون الوردي
+                if (el.type === 'empire' || el.type === 'keyword' || el.type === 'orderWord') return <span key={idx} className="text-pink-600 font-black">{el.content}</span>;
+                
                 return <span key={idx} className="text-gray-800 whitespace-pre-line">{el.content}</span>;
             });
         };
@@ -192,12 +218,12 @@
             } else {
                 match = processedText.match(standardRegex);
                 if (match) {
-                    starterSpan = <span key="starter" className="text-primary font-black ml-2 text-2xl">{match[0]}</span>;
+                    starterSpan = <span key="starter" className="text-red-800 font-black ml-2 text-2xl">{match[0]}</span>;
                     remainingText = processedText.substring(match[0].length);
                 } else {
                     const colonMatch = processedText.match(/^([^:]{1,45}[:])\s*/);
                     if (colonMatch) {
-                        starterSpan = <span key="starter" className="text-primary font-black ml-2 text-2xl">{colonMatch[0]}</span>;
+                        starterSpan = <span key="starter" className="text-red-800 font-black ml-2 text-2xl">{colonMatch[0]}</span>;
                         remainingText = processedText.substring(colonMatch[0].length);
                     }
                 }
@@ -255,7 +281,7 @@
             const [studentData, setStudentData] = useState(null);
             
             const [showUnpaidModal, setShowUnpaidModal] = useState(false);
-            const [unpaidPaymentMethod, setUnpaidPaymentMethod] = useState(''); // Added missing state
+            const [unpaidPaymentMethod, setUnpaidPaymentMethod] = useState('');
             
             const [adminResults, setAdminResults] = useState([]);
             const [adminPendingReqs, setAdminPendingReqs] = useState([]);
@@ -284,13 +310,16 @@
             const closeDialog = () => setDialog({ isOpen: false, message: '', type: 'alert', onConfirm: null });
 
             useEffect(() => {
-                window.history.pushState({ screen: 'home' }, '');
-                const handlePopState = () => {
-                    if (screen === 'quiz') setScreen('index');
-                    else if (screen === 'index') setScreen('home');
-                    else if (screen === 'result') setScreen('index');
-                    else if (screen === 'admin') setScreen('home');
-                    else window.history.pushState(null, ''); 
+                window.history.pushState(null, document.title, window.location.href);
+                const handlePopState = (event) => {
+                    window.history.pushState(null, document.title, window.location.href);
+                    if (screen === 'home' || screen === 'returning_welcome') return;
+                    showConfirm('هل أنت متأكد من الرجوع ومغادرة هذه الشاشة؟', () => {
+                        if (screen === 'quiz') setScreen('index');
+                        else if (screen === 'index') setScreen('home');
+                        else if (screen === 'result') setScreen('index');
+                        else if (screen === 'admin') setScreen('home');
+                    });
                 };
                 window.addEventListener('popstate', handlePopState);
                 return () => window.removeEventListener('popstate', handlePopState);
@@ -588,13 +617,16 @@
             const renderScreen = () => {
                 if (screen === 'returning_welcome') {
                     return (
-                        <div className="h-screen w-full flex items-center justify-center p-4 bg-gray-50">
+                        <div className="h-[100dvh] w-full flex items-center justify-center p-4 bg-gray-50">
                             <div className="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-md w-full border-t-8 border-secondary animate-fade-in relative overflow-hidden">
                                 <i className="fas fa-hand-sparkles text-6xl text-secondary mb-6 block relative z-10"></i>
-                                <h2 className="text-3xl font-black text-primary mb-4 relative z-10">مرحباً يا بطل {studentName.split(' ')[0]}!</h2>
-                                <p className="text-lg text-gray-600 font-semibold mb-8 relative z-10">مستعد نكمل ما بدأناه؟</p>
-                                <button onClick={handleResume} disabled={isLoading} className="bg-secondary text-white font-black text-xl py-4 px-10 rounded-full w-full shadow-lg mb-4 hover:bg-green-600 transition-colors relative z-10">
-                                    {isLoading ? <i className="fas fa-spinner fa-spin"></i> : 'تأكيد (نعم مستعد) 🚀'}
+                                <h2 className="text-3xl font-black text-primary mb-4 relative z-10">مرحباً يا : {studentName.split(' ')[0]}</h2>
+                                <p className="text-lg text-gray-700 font-black mb-8 relative z-10 leading-relaxed">
+                                    هل مستعد لنكمل مغامرتنا<br/>
+                                    <span className="text-secondary mt-2 block text-xl">انت قد المسؤلية نبدأ يا بطل</span>
+                                </p>
+                                <button onClick={handleResume} disabled={isLoading} className="bg-secondary text-white font-black text-2xl py-4 px-10 rounded-full w-full shadow-lg mb-4 hover:bg-green-600 transition-colors relative z-10">
+                                    {isLoading ? <i className="fas fa-spinner fa-spin"></i> : 'نعم'}
                                 </button>
                                 <button onClick={handleLogout} className="text-gray-500 font-bold text-sm underline hover:text-red-500 mt-2 relative z-10">
                                     تسجيل خروج (لست {studentName.split(' ')[0]})
@@ -609,7 +641,7 @@
                     let liveStudents = studentsList[livePhone]; if (liveStudents && !Array.isArray(liveStudents)) liveStudents = [liveStudents];
 
                     return (
-                        <div className="h-screen w-full flex items-center justify-center p-4 md:p-6 overflow-y-auto custom-scrollbar relative bg-[#f8fafc] watermark-container">
+                        <div className="h-[100dvh] w-full flex items-center justify-center p-4 md:p-6 overflow-y-auto custom-scrollbar relative bg-[#f8fafc] watermark-container">
                             <div className="w-full max-w-2xl flex flex-col items-center gap-4 sm:gap-5 py-6 z-10 my-auto">
                                 <i className="fas fa-graduation-cap text-6xl sm:text-7xl md:text-8xl text-secondary drop-shadow-sm mb-2"></i>
                                 <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 mb-2">
@@ -750,16 +782,16 @@
 
                 if (screen === 'index') {
                     return (
-                        <div className="h-screen flex flex-col watermark-container bg-gray-50">
-                            <div className="bg-white shadow-sm px-4 py-4 z-10 border-b-2 flex flex-col lg:flex-row justify-between items-center gap-4 w-full">
-                                <div className="flex items-center gap-3 shrink-0 w-full lg:w-auto justify-start">
+                        <div className="h-[100dvh] flex flex-col watermark-container bg-gray-50">
+                            <div className="shrink-0 z-50 bg-white shadow-sm px-4 py-4 border-b-2 flex flex-col lg:flex-row justify-between items-center gap-4 w-full">
+                                <div className="flex items-center gap-3 shrink-0 w-full lg:w-auto justify-center lg:justify-start">
                                     <i className="fas fa-graduation-cap text-4xl sm:text-5xl text-secondary shrink-0"></i>
-                                    <div className="flex flex-col items-start text-right">
+                                    <div className="flex flex-col items-center text-center">
                                         <div className="flex items-center gap-1 font-black text-2xl sm:text-3xl leading-none mb-1">
                                             <span className="text-secondary">موسوعة</span>
                                             <span className="text-primary">الكنز التعليمي</span>
                                         </div>
-                                        <div className="text-[11px] sm:text-xs font-bold flex gap-1">
+                                        <div className="text-[11px] sm:text-xs font-bold flex gap-1 justify-center w-full">
                                             <span className="text-primary font-bold">رؤية وإعداد</span>
                                             <span className="text-pink-600 font-black">أ/ إسلام سعود</span>
                                         </div>
@@ -767,22 +799,22 @@
                                 </div>
 
                                 <div className="flex flex-col gap-3 shrink-0 w-full lg:w-auto">
-                                    <div className="flex justify-center lg:justify-end items-center gap-2 overflow-x-auto custom-scrollbar pb-1 w-full" dir="rtl">
+                                    <div className="flex flex-nowrap overflow-x-auto custom-scrollbar justify-start lg:justify-end items-center gap-1.5 sm:gap-2 pb-2 w-full" dir="rtl">
                                         {BASE_STUDENTS[formatPhoneStr(inputPhone)]?.role === 'admin' && (
-                                            <button onClick={() => setScreen('admin')} className="bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe] px-4 py-1.5 rounded-full text-sm font-black flex items-center gap-2 shrink-0 shadow-sm hover:bg-blue-100 transition-colors">
+                                            <button onClick={() => setScreen('admin')} className="bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe] px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-black flex items-center gap-1 sm:gap-2 shrink-0 shadow-sm hover:bg-blue-100 transition-colors">
                                                 الإدارة <i className="fas fa-user-shield"></i>
                                             </button>
                                         )}
                                         <button onClick={() => showConfirm('هل أنت متأكد من مسح جميع إجاباتك والبدء من جديد؟', () => {
                                             const resetData = data.map(unit => ({ ...unit, lessons: unit.lessons.map(l => ({ ...l, completed: false })) }));
                                             setData(resetData); setActiveFilter('all'); localStorage.removeItem('savedSession');
-                                        })} className="bg-[#fff1f2] text-[#ef4444] border border-[#fecaca] px-4 py-1.5 rounded-full text-sm font-black flex items-center gap-2 shrink-0 shadow-sm hover:bg-red-50 transition-colors">
+                                        })} className="bg-[#fff1f2] text-[#ef4444] border border-[#fecaca] px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-black flex items-center gap-1 sm:gap-2 shrink-0 shadow-sm hover:bg-red-50 transition-colors">
                                             تصفير <i className="fas fa-sync-alt"></i>
                                         </button>
-                                        <div className="bg-[#f8fafc] text-[#334155] border border-[#e2e8f0] px-4 py-1.5 rounded-full text-sm font-black shrink-0 shadow-sm">
+                                        <div className="bg-[#f8fafc] text-[#334155] border border-[#e2e8f0] px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-black shrink-0 shadow-sm">
                                             {gradeName}
                                         </div>
-                                        <button onClick={handleLogout} className="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border border-red-100 shadow-sm flex items-center gap-1 shrink-0 mr-auto lg:mr-2">
+                                        <button onClick={handleLogout} className="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors border border-red-100 shadow-sm flex items-center gap-1 shrink-0 mr-auto lg:mr-2">
                                             خروج <i className="fas fa-sign-out-alt"></i>
                                         </button>
                                     </div>
@@ -811,7 +843,7 @@
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4 z-10">
-                                <div className="max-w-4xl mx-auto space-y-4">
+                                <div className="max-w-4xl mx-auto space-y-4 pt-4 pb-8">
                                     {data.map(unit => {
                                         if (unit.lessons.length === 0) return null;
                                         if (activeFilter !== 'all' && !unit.lessons.some(l => activeFilter === 'completed' ? l.completed : !l.completed)) return null;
@@ -859,47 +891,47 @@
                     };
 
                     return (
-                        <div className={`h-screen flex flex-col watermark-container relative ${isDarkMode?'bg-gray-900':''}`} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+                        <div className={`h-[100dvh] flex flex-col watermark-container relative ${isDarkMode?'bg-gray-900':''}`} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
                             <DrawingCanvas isEnabled={isDrawingMode} />
                             
-                            <div className={`shadow-md px-2 sm:px-4 py-2 flex justify-between items-center z-40 border-b-4 border-primary ${isDarkMode?'bg-gray-800':'bg-white'}`}>
-                                <div className="flex items-center gap-2 shrink-0 justify-start">
-                                    <i className={`fas fa-graduation-cap text-xl sm:text-3xl shrink-0 ${isDarkMode?'text-gray-100':'text-secondary'}`}></i>
-                                    <div className="flex flex-col hidden sm:flex items-start text-right">
-                                        <div className="flex items-center gap-1 font-black text-sm sm:text-lg leading-none mb-0.5">
+                            <div className={`shrink-0 w-full z-50 shadow-md px-1 sm:px-4 py-2 flex justify-between items-center border-b-4 border-primary ${isDarkMode?'bg-gray-800':'bg-white'}`}>
+                                <div className="flex items-center gap-1 sm:gap-2 shrink-0 justify-start w-auto">
+                                    <i className={`fas fa-graduation-cap text-lg sm:text-3xl shrink-0 ${isDarkMode?'text-gray-100':'text-secondary'}`}></i>
+                                    <div className="flex flex-col items-start text-right flex">
+                                        <div className="flex items-center gap-1 font-black text-[10px] sm:text-lg leading-none mb-0.5">
                                             <span className={isDarkMode?'text-secondary':'text-secondary'}>موسوعة</span>
                                             <span className={isDarkMode?'text-gray-100':'text-primary'}>الكنز التعليمي</span>
                                         </div>
-                                        <div className="text-[8px] sm:text-[10px] font-bold flex gap-1">
+                                        <div className="text-[7px] sm:text-[10px] font-bold flex gap-0.5 sm:gap-1 justify-start w-full">
                                             <span className="text-primary font-bold">رؤية وإعداد</span>
                                             <span className="text-pink-600 font-black">أ/ إسلام سعود</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className={`flex items-center justify-center px-4 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-inner border shrink-0 mx-2 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'}`}>
-                                    <div className="flex items-center gap-2" dir="ltr">
-                                        <div className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-white shadow-sm'}`}><i className={`fas fa-tasks text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-secondary'}`}></i></div>
-                                        <div className={`font-black text-sm sm:text-lg flex items-center gap-1 ${isDarkMode ? 'text-gray-300' : 'text-primary'}`}>
-                                            <span className="text-secondary text-lg sm:text-2xl">{toEasternArabic(currentQIndex + 1)}</span>
-                                            <span className="opacity-50 pb-1">/</span>
-                                            <span className="text-sm sm:text-base">{toEasternArabic(totalQs)}</span>
+                                <div className={`flex items-center justify-center px-2 sm:px-6 py-1 sm:py-2 rounded-full shadow-inner border shrink mx-0.5 sm:mx-2 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'}`}>
+                                    <div className="flex items-center gap-1 sm:gap-2" dir="ltr">
+                                        <div className={`flex items-center justify-center w-5 h-5 sm:w-8 sm:h-8 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-white shadow-sm'}`}><i className={`fas fa-tasks text-[8px] sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-secondary'}`}></i></div>
+                                        <div className={`font-black text-xs sm:text-lg flex items-center gap-0.5 sm:gap-1 ${isDarkMode ? 'text-gray-300' : 'text-primary'}`}>
+                                            <span className="text-secondary text-sm sm:text-2xl">{toEasternArabic(currentQIndex + 1)}</span>
+                                            <span className="opacity-50 pb-0.5 sm:pb-1">/</span>
+                                            <span className="text-[10px] sm:text-base">{toEasternArabic(totalQs)}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                                    <button onClick={toggleFullscreen} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-base transition-colors ${isFullscreen?'bg-secondary text-white':'bg-gray-100 text-primary hover:bg-gray-200'}`}><i className={`fas ${isFullscreen?'fa-compress':'fa-expand'}`}></i></button>
-                                    <button onClick={()=>setIsDrawingMode(!isDrawingMode)} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-base transition-colors ${isDrawingMode?'bg-secondary text-white':'bg-gray-100 text-primary hover:bg-gray-200'}`}><i className="fas fa-pen"></i></button>
-                                    <button onClick={()=>setIsDarkMode(!isDarkMode)} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-base transition-colors ${isDarkMode?'bg-secondary text-white':'bg-gray-100 text-primary hover:bg-gray-200'}`}><i className={`fas ${isDarkMode?'fa-sun':'fa-moon'}`}></i></button>
-                                    <button onClick={()=>setScreen('index')} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-50 flex items-center justify-center text-xs sm:text-base text-red-600 hover:bg-red-500 hover:text-white transition-colors"><i className="fas fa-home"></i></button>
+                                <div className="flex items-center gap-1 sm:gap-2 shrink-0 flex-nowrap justify-end">
+                                    <button onClick={toggleFullscreen} className={`w-6 h-6 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[10px] sm:text-base transition-colors ${isFullscreen?'bg-secondary text-white':'bg-gray-100 text-primary hover:bg-gray-200'}`}><i className={`fas ${isFullscreen?'fa-compress':'fa-expand'}`}></i></button>
+                                    <button onClick={()=>setIsDrawingMode(!isDrawingMode)} className={`w-6 h-6 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[10px] sm:text-base transition-colors ${isDrawingMode?'bg-secondary text-white':'bg-gray-100 text-primary hover:bg-gray-200'}`}><i className="fas fa-pen"></i></button>
+                                    <button onClick={()=>setIsDarkMode(!isDarkMode)} className={`w-6 h-6 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[10px] sm:text-base transition-colors ${isDarkMode?'bg-secondary text-white':'bg-gray-100 text-primary hover:bg-gray-200'}`}><i className={`fas ${isDarkMode?'fa-sun':'fa-moon'}`}></i></button>
+                                    <button onClick={()=>setScreen('index')} className="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-red-50 flex items-center justify-center text-[10px] sm:text-base text-red-600 hover:bg-red-500 hover:text-white transition-colors"><i className="fas fa-home"></i></button>
                                 </div>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4 z-10 flex flex-col">
-                                <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-center">
-                                    <div className="bg-white rounded-3xl shadow-lg p-6 mb-8 relative border-2 mt-4">
-                                        <div className="absolute -top-4 right-8 bg-secondary text-white font-bold px-4 py-1 rounded-full shadow">سؤال {toEasternArabic(currentQIndex+1)}</div>
+                                <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-center pt-4">
+                                    <div className="bg-white rounded-3xl shadow-lg p-6 md:p-8 mb-8 relative border-2 mt-8">
+                                        <div className="absolute -top-5 right-8 bg-secondary text-white font-bold px-4 py-1 rounded-full shadow">سؤال {toEasternArabic(currentQIndex+1)}</div>
                                         <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mt-2 leading-relaxed">{formatQuestionText(question.q, question.concept)}</h2>
                                     </div>
 
@@ -920,13 +952,13 @@
                                     {question.type === 'essay' && (
                                         <div className="mb-8 w-full text-center">
                                             {!isAnswered ? <button onClick={handleEssayReveal} className="bg-primary text-white font-bold text-2xl py-6 px-12 rounded-2xl w-full max-w-lg shadow-lg active:scale-95 transition-transform">الإجابة <i className="fas fa-eye ml-2"></i></button> : (
-                                                <div className="bg-green-50 rounded-3xl p-6 border-r-8 border-green-500 text-right shadow-sm"><h3 className="text-2xl font-black text-green-800 mb-4">الإجابة:</h3><div className="text-xl font-bold leading-relaxed">{highlightText(question.answer, question.concept)}</div></div>
+                                                <div className="bg-green-50 rounded-3xl p-6 border-r-8 border-green-500 text-right shadow-sm"><h3 className="text-2xl font-black text-red-600 underline underline-offset-4 mb-4">الإجابة:</h3><div className="text-xl font-bold leading-relaxed">{highlightText(question.answer, question.concept)}</div></div>
                                             )}
                                         </div>
                                     )}
 
                                     {isAnswered && question.type === 'mcq' && question.reason && (
-                                        <div className={`mt-4 rounded-3xl p-6 shadow-md border-r-8 ${currentAnswer.isCorrect?'bg-green-50 border-green-500':'bg-red-50 border-red-500'}`}><h3 className="text-xl font-black mb-2">التعليل:</h3><div className="text-xl font-bold leading-relaxed">{highlightText(question.reason, question.concept)}</div></div>
+                                        <div className={`mt-4 rounded-3xl p-6 shadow-md border-r-8 ${currentAnswer.isCorrect?'bg-green-50 border-green-500':'bg-red-50 border-red-500'}`}><h3 className="text-xl font-black text-red-600 underline underline-offset-4 mb-2">التعليل:</h3><div className="text-xl font-bold leading-relaxed">{highlightText(question.reason, question.concept)}</div></div>
                                     )}
 
                                     <div className="mt-auto pt-8 flex justify-between items-center">
@@ -945,7 +977,7 @@
                     const firstName = studentName ? studentName.split(' ')[0] : 'يا بطل';
 
                     return (
-                        <div className="h-screen w-full flex items-center justify-center p-6 bg-gray-50 overflow-y-auto">
+                        <div className="h-[100dvh] w-full flex items-center justify-center p-6 bg-gray-50 overflow-y-auto">
                             <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 md:p-10 text-center border-t-8 border-primary my-auto animate-fade-in flex flex-col items-center">
                                 <i className={`fas ${perc===100?'fa-trophy text-gold':perc>=75?'fa-medal text-blue-500':'fa-book-open text-secondary'} text-7xl md:text-8xl mb-4 block`}></i>
                                 <div className="text-5xl md:text-6xl font-black text-primary mb-6 flex justify-center items-center gap-1" dir="ltr"><span>{toEasternArabic(perc)}</span><span>%</span></div>
@@ -969,7 +1001,26 @@
                                         </div>
                                     )}
                                 </div>
-                                <button onClick={()=>{setData(data.map(u=>({...u,lessons:u.lessons.map(l=>l.id===activeLesson.id?{...l,completed:true}:l)}))); setScreen('index');}} className="bg-primary text-white font-black text-xl md:text-2xl py-4 px-10 rounded-full w-full hover:bg-gray-900 transition-colors shadow-lg active:scale-95">العودة للفهرس</button>
+                                <div className="flex flex-col gap-3 w-full">
+                                    <button 
+                                        disabled={perc === 100}
+                                        onClick={() => {
+                                            const wrongQuestions = activeLesson.questions.filter((q, i) => userAnswers[i] && userAnswers[i].isCorrect === false);
+                                            setActiveLesson({ 
+                                                ...activeLesson, 
+                                                title: activeLesson.title.includes('(مراجعة الأخطاء)') ? activeLesson.title : activeLesson.title + ' (مراجعة الأخطاء)', 
+                                                questions: wrongQuestions 
+                                            });
+                                            setUserAnswers([]);
+                                            setCurrentQIndex(0);
+                                            setScreen('quiz');
+                                        }} 
+                                        className={`font-black text-xl md:text-2xl py-4 px-10 rounded-full w-full transition-colors shadow-lg active:scale-95 ${perc === 100 ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70' : 'bg-rose-500 hover:bg-rose-600 text-white'}`}
+                                    >
+                                        إعادة اختبار الأخطاء فقط 🔄
+                                    </button>
+                                    <button onClick={()=>{setData(data.map(u=>({...u,lessons:u.lessons.map(l=>l.id===activeLesson.id?{...l,completed:true}:l)}))); setScreen('index');}} className="bg-primary text-white font-black text-xl md:text-2xl py-4 px-10 rounded-full w-full hover:bg-gray-900 transition-colors shadow-lg active:scale-95">العودة للفهرس</button>
+                                </div>
                             </div>
                         </div>
                     );
@@ -977,8 +1028,8 @@
 
                 if (screen === 'admin') {
                     return (
-                        <div className="h-screen w-full flex flex-col bg-gray-50 watermark-container">
-                            <div className="bg-primary text-white p-4 flex justify-between items-center z-10 border-b-4 border-gold flex-wrap gap-y-3 shadow-md">
+                        <div className="h-[100dvh] w-full flex flex-col bg-gray-50 watermark-container">
+                            <div className="shrink-0 w-full z-50 bg-primary text-white p-4 flex justify-between items-center border-b-4 border-gold flex-wrap gap-y-3 shadow-md">
                                 <div className="flex items-center gap-3 shrink-0 justify-start">
                                     <i className="fas fa-graduation-cap text-3xl sm:text-4xl text-gold shrink-0"></i>
                                     <div className="flex flex-col items-start text-right">
@@ -993,7 +1044,7 @@
                                 </div>
                             </div>
                             
-                            <div className="flex-1 overflow-y-auto p-4 z-10 flex flex-col md:flex-row gap-6">
+                            <div className="flex-1 overflow-y-auto p-4 z-10 flex flex-col md:flex-row gap-6 pt-6">
                                 <div className="w-full md:w-64 bg-white rounded-2xl shadow-md p-3 flex flex-row md:flex-col overflow-x-auto gap-2">
                                     <button onClick={() => setAdminActiveTab('results')} className={`px-4 py-3 rounded-xl font-bold text-sm whitespace-nowrap text-right transition-colors ${adminActiveTab==='results'?'bg-primary text-white':'text-gray-600 hover:bg-gray-100'}`}>النتائج (أ - ي)</button>
                                     <button onClick={() => setAdminActiveTab('requests')} className={`px-4 py-3 rounded-xl font-bold text-sm whitespace-nowrap text-right relative transition-colors ${adminActiveTab==='requests'?'bg-primary text-white':'text-gray-600 hover:bg-gray-100'}`}>الطلبات {adminPendingReqs.length>0&&<span className="absolute top-2 left-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{adminPendingReqs.length}</span>}</button>
